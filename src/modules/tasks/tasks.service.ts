@@ -19,14 +19,12 @@ export class TasksService {
   @Cron(CronExpression.EVERY_2_HOURS)
   async handleCron() {
     const categories = await this.categoryModel.find();
-
     for (const category of categories) {
       setTimeout(
         async () => {
           await this.newsService.cronNews(category.slug);
           this.logger.log(`📰 Start cron job for ${category.slug} 🚀🚀🚀`);
         },
-
         1000 * 60 * 10,
       );
     }

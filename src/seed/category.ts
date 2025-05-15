@@ -50,11 +50,11 @@ const categories = [
   },
 ];
 
-export const seedCategories = async () => {
+const seedCategories = async () => {
   try {
     const username = process.env.MONGO_USERNAME;
     const password = process.env.MONGO_PASSWORD;
-    const database = process.env.MONGO_DATABASE || 'filixer-news';
+    const database = process.env.MONGO_DATABASE ?? 'filixer-news';
 
     const mongoUri = `mongodb://${username}:${password}@mongo:27017/${database}?authSource=admin`;
 
@@ -66,3 +66,5 @@ export const seedCategories = async () => {
     console.error('Error seeding categories:', error);
   }
 };
+
+seedCategories();

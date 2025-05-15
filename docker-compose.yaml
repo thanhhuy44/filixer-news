@@ -10,6 +10,8 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     volumes:
       - mongo-data:/data/db
+    networks:
+      - filixer-network
   app:
     build:
       dockerfile: Dockerfile
@@ -25,6 +27,12 @@ services:
       - MONGO_DATABASE=${MONGO_DATABASE}
     env_file:
       - .env
+    networks:
+      - filixer-network
 
 volumes:
   mongo-data:
+
+
+networks:
+  filixer-network:

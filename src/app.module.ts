@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common/decorators';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { CommandModule } from 'nestjs-command';
 import { TelegrafModule } from 'nestjs-telegraf';
 
 import { NewsModule } from './modules';
 import { CategoryModule } from './modules/category/category.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 
 @Module({
   imports: [
@@ -28,9 +30,11 @@ import { CategoryModule } from './modules/category/category.module';
         launchOptions: false,
       }),
     }),
+    ScheduleModule.forRoot(),
     CommandModule,
     CategoryModule,
     NewsModule,
+    TasksModule,
   ],
   providers: [],
 })
