@@ -1,9 +1,6 @@
-import dotenv from 'dotenv';
 import { connect, model } from 'mongoose';
 
 import { CategorySchema } from '../modules/category/entities/category.entity';
-
-dotenv.config();
 
 const categories = [
   {
