@@ -50,15 +50,19 @@ const categories = [
   },
 ];
 
-const seedCategories = async () => {
+export const seedCategories = async () => {
   try {
-    await connect('mongodb://localhost:27017/filixer-news');
+    const username = process.env.MONGO_USERNAME;
+    const password = process.env.MONGO_PASSWORD;
+    const database = process.env.MONGO_DATABASE || 'filixer-news';
+
+    const mongoUri = `mongodb://${username}:${password}@mongo:27017/${database}?authSource=admin`;
+
+    await connect(mongoUri);
     const CategoryModel = model('Category', CategorySchema);
     const categoryModel = await CategoryModel.insertMany(categories);
-    console.log(categoryModel);
+    console.log('Categories seeded successfully:', categoryModel);
   } catch (error) {
     console.error('Error seeding categories:', error);
   }
 };
-
-seedCategories();
