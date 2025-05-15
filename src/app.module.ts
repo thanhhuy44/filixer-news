@@ -4,7 +4,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CommandModule } from 'nestjs-command';
 import { TelegrafModule } from 'nestjs-telegraf';
 
-import { AppService } from './app.service';
 import { NewsModule } from './modules';
 import { CategoryModule } from './modules/category/category.module';
 
@@ -33,6 +32,6 @@ import { CategoryModule } from './modules/category/category.module';
     CategoryModule,
     NewsModule,
   ],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}
