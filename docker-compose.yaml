@@ -3,22 +3,26 @@ version: '3.8'
 services:
   mongo:
     image: mongo:latest
-    container_name: mongo_dev
+    container_name: mongo_filixer_news
     restart: always
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=Thanhhuy_44
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     volumes:
       - mongo-data:/data/db
   app:
     build:
       dockerfile: Dockerfile
-    container_name: my-app
+    container_name: filixer-news
     restart: always
     ports:
       - "${PORT:-3030}:${PORT:-3030}"
     depends_on:
       - mongo
+    environment:
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_DATABASE=${MONGO_DATABASE}
     env_file:
       - .env.local
 

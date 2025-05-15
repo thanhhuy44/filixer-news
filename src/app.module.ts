@@ -17,7 +17,7 @@ import { CategoryModule } from './modules/category/category.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get('DATABASE_URL'),
+        uri: `mongodb://${configService.get('MONGO_USERNAME')}:${configService.get('MONGO_PASSWORD')}@mongo:27017/${configService.get('MONGO_DATABASE')}?authSource=admin`,
       }),
     }),
     TelegrafModule.forRootAsync({
