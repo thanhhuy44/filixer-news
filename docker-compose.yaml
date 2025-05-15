@@ -24,7 +24,7 @@ services:
       - MONGO_PASSWORD=${MONGO_PASSWORD}
       - MONGO_DATABASE=${MONGO_DATABASE}
     env_file:
-      - .env.local
+      - .env
 
 volumes:
   mongo-data:
