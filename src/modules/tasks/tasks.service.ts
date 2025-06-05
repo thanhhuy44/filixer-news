@@ -7,7 +7,7 @@ import { NewsService } from '~/news/news.service';
 export class TasksService {
   constructor(private readonly newsService: NewsService) {}
 
-  @Cron(CronExpression.EVERY_2_HOURS)
+  @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron() {
     await this.newsService.cronNews();
   }
