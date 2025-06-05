@@ -151,7 +151,7 @@ Yêu cầu tóm tắt:
 
   async cronNews() {
     const news = await this.fetchNews();
-    const newsList = await this.parseNews(news);
+    const newsList = (await this.parseNews(news)).reverse();
 
     for (let index = 0; index < newsList.length; index++) {
       const news = newsList[index];
