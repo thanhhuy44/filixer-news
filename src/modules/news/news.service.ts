@@ -1,43 +1,35 @@
 import { GoogleGenAI } from '@google/genai';
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { WebClient } from '@slack/web-api';
 import * as cheerio from 'cheerio';
 import { Model } from 'mongoose';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 
-import {
-  Category,
-  CategoryDocument,
-} from '../category/entities/category.entity';
+import { Category } from '../category/entities/category.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { News, NewsDocument } from './entities/news.entity';
 @Injectable()
-export class NewsService implements OnModuleInit {
+export class NewsService {
   private readonly cronSource = 'https://znews.vn';
   private readonly MAX_NEWS = 10;
   private readonly GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   private readonly GEMINI_MODEL = process.env.GEMINI_MODEL;
+
+  private readonly SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+  private readonly SLACK_CHANNEL_ID = process.env.SLACK_CHANNEL_ID;
+
   private readonly GEMINI_AI = new GoogleGenAI({
     apiKey: this.GEMINI_API_KEY,
   });
-  private readonly TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-  private categories: CategoryDocument[] = [];
+  private readonly SlackClient = new WebClient(this.SLACK_BOT_TOKEN);
 
   constructor(
     @InjectModel(News.name) private readonly newsModel: Model<News>,
     @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
     @InjectBot() private readonly bot: Telegraf,
   ) {}
-
-  async onModuleInit() {
-    await this.getCategories();
-  }
-
-  private async getCategories() {
-    this.categories = await this.categoryModel.find();
-  }
 
   async create(createNewsDto: CreateNewsDto) {
     const existingNews = await this.newsModel.findOne({
@@ -56,8 +48,8 @@ export class NewsService implements OnModuleInit {
     });
   }
 
-  private async fetchNews(category: string) {
-    const response = await fetch(`${this.cronSource}/${category}.html`).then(
+  private async fetchNews() {
+    const response = await fetch(`${this.cronSource}/the-thao.html`).then(
       (res) => res.text(),
     );
     return response;
@@ -111,29 +103,45 @@ Yêu cầu tóm tắt:
       model: this.GEMINI_MODEL,
       contents: prompt,
       config: {
-        temperature: 0.5,
+        temperature: 0,
       },
     });
     return response.text;
   }
 
-  private async sendNewsToChannel(news: NewsDocument, threadId: number) {
+  private async sendNewsToChannel(news: NewsDocument) {
     try {
-      const caption = `<strong>${news.title}</strong>\n${news.summary.trim()}`;
-      await this.bot.telegram.sendPhoto(this.TELEGRAM_CHAT_ID, news.thumbnail, {
-        caption,
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [
+      await this.SlackClient.chat.postMessage({
+        channel: this.SLACK_CHANNEL_ID,
+        text: news.title,
+        blocks: [
+          {
+            type: 'image',
+            image_url: news.thumbnail,
+            alt_text: news.title,
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*${news.title}*\n${news.summary}`,
+            },
+          },
+          {
+            type: 'actions',
+            elements: [
               {
-                text: 'Xem thêm',
+                type: 'button',
+                text: {
+                  type: 'plain_text',
+                  text: 'Xem chi tiết',
+                },
                 url: news.link,
+                style: 'primary',
               },
             ],
-          ],
-        },
-        message_thread_id: threadId,
+          },
+        ],
       });
     } catch (error) {
       console.error('🚀 ~ NewsService ~ sendNewsToChannel ~ error:', error);
@@ -141,12 +149,8 @@ Yêu cầu tóm tắt:
     }
   }
 
-  async cronNews(category: string) {
-    const existingCategory = this.categories.find((c) => c.slug === category);
-    if (!existingCategory) {
-      throw new BadRequestException('Category not found');
-    }
-    const news = await this.fetchNews(existingCategory.slug);
+  async cronNews() {
+    const news = await this.fetchNews();
     const newsList = await this.parseNews(news);
 
     for (let index = 0; index < newsList.length; index++) {
@@ -157,9 +161,9 @@ Yêu cầu tóm tắt:
             const newNews = await this.create({
               ...news,
               newsId: news.id,
-              category: existingCategory._id.toString(),
+              category: 'the-thao',
             });
-            await this.sendNewsToChannel(newNews, existingCategory.threadId);
+            await this.sendNewsToChannel(newNews);
             console.log('🚀 ~ NewsService ~ cronNews ~ news:', news.title);
           } catch (error) {
             console.error('🚀 ~ NewsService ~ cronNews ~ error:', error);

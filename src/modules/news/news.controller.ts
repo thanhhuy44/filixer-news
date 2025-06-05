@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common/decorators';
+import { Body, Controller, Get, Post } from '@nestjs/common/decorators';
 
 import { CreateNewsDto } from './dto/create-news.dto';
 import { NewsService } from './news.service';
@@ -13,9 +13,9 @@ export class NewsController {
     return { data };
   }
 
-  @Get('/cron/:category')
-  async cronNews(@Param('category') category: string) {
-    const data = await this.newsService.cronNews(category);
+  @Get('/cron')
+  async cronNews() {
+    const data = await this.newsService.cronNews();
     return { data };
   }
 }
