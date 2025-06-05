@@ -4,8 +4,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { WebClient } from '@slack/web-api';
 import * as cheerio from 'cheerio';
 import { Model } from 'mongoose';
-import { InjectBot } from 'nestjs-telegraf';
-import { Telegraf } from 'telegraf';
 
 import { Category } from '../category/entities/category.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
@@ -28,7 +26,6 @@ export class NewsService {
   constructor(
     @InjectModel(News.name) private readonly newsModel: Model<News>,
     @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
-    @InjectBot() private readonly bot: Telegraf,
   ) {}
 
   async create(createNewsDto: CreateNewsDto) {
