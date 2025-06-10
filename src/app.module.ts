@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 
-import { NewsModule } from './modules';
+import { CategoryModule, NewsModule } from './modules';
 import { TasksModule } from './modules/tasks/tasks.module';
 
 @Module({
@@ -20,8 +20,10 @@ import { TasksModule } from './modules/tasks/tasks.module';
       }),
     }),
     ScheduleModule.forRoot(),
+
     NewsModule,
     TasksModule,
+    CategoryModule,
   ],
   providers: [],
 })

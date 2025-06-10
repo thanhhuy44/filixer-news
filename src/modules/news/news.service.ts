@@ -11,7 +11,6 @@ import { News, NewsDocument } from './entities/news.entity';
 @Injectable()
 export class NewsService {
   private readonly cronSource = 'https://znews.vn';
-  private readonly MAX_NEWS = 10;
   private readonly GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   private readonly GEMINI_MODEL = process.env.GEMINI_MODEL;
 
@@ -55,23 +54,19 @@ export class NewsService {
   private async parseNews(html: string) {
     const $ = cheerio.load(html);
     const newsList = $('#news-latest .article-list .article-item');
-    const newsListData = newsList
-      .get()
-      .slice(0, this.MAX_NEWS)
-      .map((element) => {
-        const $element = $(element);
-        return {
-          id: $element.attr('article-id'),
-          thumbnail: $element
-            .find('.article-thumbnail img')
-            .attr('data-src')
-            ?.trim(),
-          title: $element.find('.article-title').text().trim() ?? '',
-          summary: $element.find('.article-summary').text().trim() ?? '',
-          link:
-            $element.find('.article-thumbnail a').attr('href')?.trim() ?? '',
-        };
-      });
+    const newsListData = newsList.get().map((element) => {
+      const $element = $(element);
+      return {
+        id: $element.attr('article-id'),
+        thumbnail: $element
+          .find('.article-thumbnail img')
+          .attr('data-src')
+          ?.trim(),
+        title: $element.find('.article-title').text().trim() ?? '',
+        summary: $element.find('.article-summary').text().trim() ?? '',
+        link: $element.find('.article-thumbnail a').attr('href')?.trim() ?? '',
+      };
+    });
 
     return newsListData;
   }
