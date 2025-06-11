@@ -36,7 +36,6 @@ async function bootstrap() {
     .setTitle('NestJS Mongoose Starter')
     .setDescription('API description')
     .setVersion('1.0')
-    .setBasePath('api')
     .build();
   const document = SwaggerModule.createDocument(app, config);
 

@@ -1,11 +1,14 @@
 import { GoogleGenAI } from '@google/genai';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { WebClient } from '@slack/web-api';
 import * as cheerio from 'cheerio';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
-import { Category } from '../category/entities/category.entity';
+import {
+  Category,
+  CategoryDocument,
+} from '../category/entities/category.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { News, NewsDocument } from './entities/news.entity';
 @Injectable()
@@ -15,7 +18,6 @@ export class NewsService {
   private readonly GEMINI_MODEL = process.env.GEMINI_MODEL;
 
   private readonly SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
-  private readonly SLACK_CHANNEL_ID = process.env.SLACK_CHANNEL_ID;
 
   private readonly GEMINI_AI = new GoogleGenAI({
     apiKey: this.GEMINI_API_KEY,
@@ -27,27 +29,24 @@ export class NewsService {
     @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
   ) {}
 
-  async create(createNewsDto: CreateNewsDto) {
+  private async create(createNewsDto: CreateNewsDto) {
     const existingNews = await this.newsModel.findOne({
       newsId: createNewsDto.newsId,
     });
     if (existingNews) {
-      throw new BadRequestException('News already exists');
+      return;
     }
-    const content = await this.getNewsDetail(createNewsDto.link);
-    const summary = await this.summarizeNews(content);
     return await this.newsModel.create({
       ...createNewsDto,
-      summary,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      summary: '',
+      category: new Types.ObjectId(createNewsDto.category),
     });
   }
 
-  private async fetchNews() {
-    const response = await fetch(`${this.cronSource}/the-thao.html`).then(
-      (res) => res.text(),
-    );
+  private async fetchNews(category: CategoryDocument) {
+    const response = await fetch(
+      `${this.cronSource}/${category.slug}.html`,
+    ).then((res) => res.text());
     return response;
   }
 
@@ -101,10 +100,25 @@ Yêu cầu tóm tắt:
     return response.text;
   }
 
-  private async sendNewsToChannel(news: NewsDocument) {
+  async summaryNewsTask() {
+    const news = await this.newsModel
+      .findOne({
+        isSummary: false,
+      })
+      .populate('category');
+    if (!news) return;
+    const content = await this.getNewsDetail(news.link);
+    const summary = await this.summarizeNews(content);
+    news.isSummary = true;
+    news.summary = summary;
+    news.save();
+    return news;
+  }
+
+  async sendNewsToChannel(news: NewsDocument) {
     try {
       await this.SlackClient.chat.postMessage({
-        channel: this.SLACK_CHANNEL_ID,
+        channel: (news.category as unknown as CategoryDocument).slackRoom,
         text: news.title,
         blocks: [
           {
@@ -141,28 +155,19 @@ Yêu cầu tóm tắt:
     }
   }
 
-  async cronNews() {
-    const news = await this.fetchNews();
-    const newsList = (await this.parseNews(news)).reverse();
-
-    for (let index = 0; index < newsList.length; index++) {
-      const news = newsList[index];
-      setTimeout(
-        async () => {
-          try {
-            const newNews = await this.create({
-              ...news,
-              newsId: news.id,
-              category: 'the-thao',
-            });
-            await this.sendNewsToChannel(newNews);
-            console.log('🚀 ~ NewsService ~ cronNews ~ news:', news.title);
-          } catch (error) {
-            console.error('🚀 ~ NewsService ~ cronNews ~ error:', error);
-          }
-        },
-        1000 * 60 * index,
-      );
+  async scrapNews() {
+    const categories = await this.categoryModel.find();
+    if (!categories) return;
+    for (const category of categories) {
+      const news = await this.fetchNews(category);
+      const newsList = (await this.parseNews(news)).reverse();
+      newsList.forEach(async (news) => {
+        await this.create({
+          ...news,
+          newsId: news.id,
+          category: category._id.toString(),
+        });
+      });
     }
   }
 }
